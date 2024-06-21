@@ -1,5 +1,5 @@
 import { Client } from "pg";
-console.log(process.env.NODE_ENV);
+// console.log(process.env.NODE_ENV);
 async function query(queryObject) {
   let client;
   try {
