@@ -1,40 +1,55 @@
+import { createRouter } from "next-connect";
 import migrationRunner from "node-pg-migrate"; // migrationRunner é um nome que escolhemos para importar o nodepgmigration
 import { resolve } from "node:path";
 import database from "infra/database.js";
+import controller from "infra/controller.js";
 
-export default async function migrations(request, response) {
-  if (!(request.method === "GET" || request.method === "POST")) {
-    return response.status(405).end();
+const router = createRouter();
+
+router.get(getHandler);
+router.post(postHandler);
+
+export default router.handler(controller.errorHandles);
+
+const defaultMigrationOptions = {
+  dryRun: true,
+  dir: resolve("infra", "migrations"),
+  direction: "up",
+  verbose: true,
+  migrationsTable: "pgmigrations",
+};
+
+async function getHandler(request, response) {
+  let dbClient;
+
+  try {
+    dbClient = await database.getNewClient();
+    const pendingMigrations = await migrationRunner({
+      ...defaultMigrationOptions,
+      dbClient,
+    });
+    return response.status(200).json(pendingMigrations);
+  } finally {
+    await dbClient.end();
   }
+}
 
-  const dbClient = await database.getNewClient();
+async function postHandler(request, response) {
+  let dbClient;
 
-  const defaultMigrationOptions = {
-    dbClient: dbClient,
-    dryRun: true,
-    dir: resolve("infra", "migrations"),
-    direction: "up",
-    verbose: true,
-    migrationsTable: "pgmigrations",
-  };
-
-  if (request.method === "POST") {
+  try {
+    dbClient = await database.getNewClient();
     const migratedMigrations = await migrationRunner({
       ...defaultMigrationOptions,
+      dbClient,
       dryRun: false,
     });
-
-    await dbClient.end();
 
     if (migratedMigrations.length > 0) {
       return response.status(201).json(migratedMigrations);
     }
     return response.status(200).json(migratedMigrations);
-  }
-
-  if (request.method === "GET") {
-    const pendingMigrations = await migrationRunner(defaultMigrationOptions);
+  } finally {
     await dbClient.end();
-    return response.status(200).json(pendingMigrations);
   }
 }
