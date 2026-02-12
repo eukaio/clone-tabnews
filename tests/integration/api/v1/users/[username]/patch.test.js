@@ -227,12 +227,10 @@ describe("PATCH /api/v1/users/[username]", () => {
       const responseBody = await response.json();
 
       expect(responseBody).toEqual({
-        id: responseBody.id,
+        id: createdUser.id,
         username: "uniqueUser2",
-        email: responseBody.email,
         features: ["create:session", "read:session", "update:user"],
-        password: responseBody.password,
-        created_at: responseBody.created_at,
+        created_at: createdUser.created_at.toISOString(),
         updated_at: responseBody.updated_at,
       });
 
@@ -270,10 +268,8 @@ describe("PATCH /api/v1/users/[username]", () => {
       expect(responseBody).toEqual({
         id: responseBody.id,
         username: createdUser.username,
-        email: "uniqueEmail2@curso.dev",
         features: ["create:session", "read:session", "update:user"],
-        password: responseBody.password,
-        created_at: responseBody.created_at,
+        created_at: createdUser.created_at.toISOString(),
         updated_at: responseBody.updated_at,
       });
 
@@ -309,12 +305,10 @@ describe("PATCH /api/v1/users/[username]", () => {
       const responseBody = await response.json();
 
       expect(responseBody).toEqual({
-        id: responseBody.id,
+        id: createdUser.id,
         username: createdUser.username,
-        email: createdUser.email,
         features: ["create:session", "read:session", "update:user"],
-        password: responseBody.password,
-        created_at: responseBody.created_at,
+        created_at: createdUser.created_at.toISOString(),
         updated_at: responseBody.updated_at,
       });
 
@@ -377,10 +371,8 @@ describe("PATCH /api/v1/users/[username]", () => {
       expect(responseBody).toEqual({
         id: defaultUser.id,
         username: "AlteradoPorPrivilegiado",
-        email: defaultUser.email,
         features: defaultUser.features,
-        password: responseBody.password,
-        created_at: responseBody.created_at,
+        created_at: defaultUser.created_at.toISOString(),
         updated_at: responseBody.updated_at,
       });
 
