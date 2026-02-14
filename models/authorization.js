@@ -1,4 +1,33 @@
+import { InternalServerError } from "infra/errors.js";
+
+const availableFeatures = [
+  // User
+  "create:user",
+  "read:user",
+  "read:user:self",
+  "update:user",
+  "update:user:others",
+
+  // Session
+  "create:session",
+  "read:session",
+
+  // Activation Token
+  "read:activation_token",
+
+  // Migration
+  "create:migration",
+  "read:migration",
+
+  // Status
+  "read:status",
+  "read:status:all",
+];
+
 function can(user, feature, resource) {
+  validateUser(user);
+  validateFeature(feature);
+
   let authorized = false;
 
   if (user.features.includes(feature)) {
@@ -16,56 +45,60 @@ function can(user, feature, resource) {
   return authorized;
 }
 
-function filterOutput(user, feature, insecureValues) {
+function filterOutput(user, feature, rawData) {
+  validateUser(user);
+  validateFeature(feature);
+  validaterawData(rawData);
+
   if (feature === "read:user") {
     return {
-      id: insecureValues.id,
-      username: insecureValues.username,
-      features: insecureValues.features,
-      created_at: insecureValues.created_at,
-      updated_at: insecureValues.updated_at,
+      id: rawData.id,
+      username: rawData.username,
+      features: rawData.features,
+      created_at: rawData.created_at,
+      updated_at: rawData.updated_at,
     };
   }
 
   if (feature === "read:user:self") {
-    if (user.id === insecureValues.id) {
+    if (user.id === rawData.id) {
       return {
-        id: insecureValues.id,
-        username: insecureValues.username,
-        email: insecureValues.email,
-        features: insecureValues.features,
-        created_at: insecureValues.created_at,
-        updated_at: insecureValues.updated_at,
+        id: rawData.id,
+        username: rawData.username,
+        email: rawData.email,
+        features: rawData.features,
+        created_at: rawData.created_at,
+        updated_at: rawData.updated_at,
       };
     }
   }
 
   if (feature === "read:session") {
-    if (user.id === insecureValues.user_id) {
+    if (user.id === rawData.user_id) {
       return {
-        id: insecureValues.id,
-        token: insecureValues.token,
-        user_id: insecureValues.user_id,
-        created_at: insecureValues.created_at,
-        updated_at: insecureValues.updated_at,
-        expires_at: insecureValues.expires_at,
+        id: rawData.id,
+        token: rawData.token,
+        user_id: rawData.user_id,
+        created_at: rawData.created_at,
+        updated_at: rawData.updated_at,
+        expires_at: rawData.expires_at,
       };
     }
   }
 
   if (feature === "read:activation_token") {
     return {
-      id: insecureValues.id,
-      user_id: insecureValues.user_id,
-      created_at: insecureValues.created_at,
-      updated_at: insecureValues.updated_at,
-      expires_at: insecureValues.expires_at,
-      used_at: insecureValues.used_at,
+      id: rawData.id,
+      user_id: rawData.user_id,
+      created_at: rawData.created_at,
+      updated_at: rawData.updated_at,
+      expires_at: rawData.expires_at,
+      used_at: rawData.used_at,
     };
   }
 
   if (feature === "read:migration") {
-    return insecureValues.map((migration) => {
+    return rawData.map((migration) => {
       return {
         path: migration.path,
         name: migration.name,
@@ -76,19 +109,18 @@ function filterOutput(user, feature, insecureValues) {
 
   if (feature === "read:status") {
     const output = {
-      updated_at: insecureValues.updated_at,
+      updated_at: rawData.updated_at,
       dependencies: {
         database: {
-          max_connections: insecureValues.dependencies.database.max_connections,
-          opened_connections:
-            insecureValues.dependencies.database.opened_connections,
+          max_connections: rawData.dependencies.database.max_connections,
+          opened_connections: rawData.dependencies.database.opened_connections,
         },
       },
     };
 
     if (can(user, "read:status:all")) {
       output.dependencies.database.version =
-        insecureValues.dependencies.database.version;
+        rawData.dependencies.database.version;
     }
 
     return output;
@@ -97,9 +129,35 @@ function filterOutput(user, feature, insecureValues) {
   return {};
 }
 
+function validateUser(user) {
+  if (!user || !user.features) {
+    throw new InternalServerError({
+      cause: "É necessário fornecer `user` no model `authorization`.",
+    });
+  }
+}
+
+function validateFeature(feature) {
+  if (!feature || !availableFeatures.includes(feature)) {
+    throw new InternalServerError({
+      cause:
+        "É necessário fornecer uma `feature` conhecida no model `authorization`.",
+    });
+  }
+}
+
+function validaterawData(rawData) {
+  if (!rawData) {
+    throw new InternalServerError({
+      cause: "É necessário um `rawData` em `authorization.filterOutput()`.",
+    });
+  }
+}
+
 const authorization = {
   can,
   filterOutput,
+  validateUser,
 };
 
 export default authorization;
