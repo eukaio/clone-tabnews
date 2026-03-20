@@ -22,12 +22,10 @@ function UpdatedAt() {
 
   let updatedAtText = "Carregando...";
   let database = {};
-  let webserver = {};
 
   if (!isLoading && data) {
     updatedAtText = new Date(data.updated_at).toLocaleString("pt-BR");
     database = data.dependencies.database;
-    webserver = data.dependencies.webserver;
   }
 
   return (
@@ -40,9 +38,6 @@ function UpdatedAt() {
       🚨 Conexões máximas: {database.max_connections || "Carregando..."}
       <br />
       🟢 Conexões ativas: {database.opened_connections || "Carregando..."}
-      <br />
-      <br />
-      🌐 Versão do servidor web: {webserver.version || "Carregando..."}
     </div>
   );
 }
