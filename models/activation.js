@@ -64,7 +64,7 @@ async function create(userId) {
 
 async function sendEmailToUser(user, activationToken) {
   await email.send({
-    from: "eukaio <contato@eukaio.com.br>",
+    from: "eukaio <contato@mail.eukaio.com.br>",
     to: user.email,
     subject: "Ative seu cadastro!",
     text: `${user.username}, clique no link abaixo para ativar seu cadastro:
