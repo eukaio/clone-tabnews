@@ -66,8 +66,8 @@ async function activateUser(inactiveUser) {
   return await activation.activateUserByUserId(inactiveUser.id);
 }
 
-async function createSession(userId) {
-  return await session.create(userId);
+async function createSession(user) {
+  return await session.create(user.id);
 }
 
 async function deleteAllEmails() {
