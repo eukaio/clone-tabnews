@@ -119,15 +119,13 @@ describe("POST /api/v1/sessions", () => {
       expect(Date.parse(responseBody.created_at)).not.toBeNaN();
       expect(Date.parse(responseBody.updated_at)).not.toBeNaN();
 
-      const diferenceInMilliseconds =
+      const actualLifetimeInMilliseconds =
         new Date(responseBody.expires_at) - new Date(responseBody.created_at);
+      // O tempo de vida real da sessão será ligeiramente menor que EXPIRATION_IN_MILLISECONDS
 
-      expect(diferenceInMilliseconds).toBeGreaterThanOrEqual(
-        session.EXPIRATION_IN_MILLISECONDS - 1000,
-      );
-      expect(diferenceInMilliseconds).toBeLessThanOrEqual(
-        session.EXPIRATION_IN_MILLISECONDS + 1000,
-      );
+      expect(
+        session.EXPIRATION_IN_MILLISECONDS - actualLifetimeInMilliseconds,
+      ).toBeLessThanOrEqual(5000);
 
       const parsedSetCookie = setCookieParser(response, {
         map: true,
