@@ -91,8 +91,8 @@ async function findOneByEmail(email) {
 }
 
 async function create(userInputValues) {
-  await validadeUniqueUsername(userInputValues.username);
-  await validadeUniqueEmail(userInputValues.email);
+  await validateUniqueUsername(userInputValues.username);
+  await validateUniqueEmail(userInputValues.email);
   await hashPasswordInObject(userInputValues);
 
   injectDefaultFeaturesInObject(userInputValues);
@@ -133,12 +133,12 @@ async function update(username, userInputValues) {
       currentUser.username.toLowerCase() !==
       userInputValues.username.toLowerCase()
     ) {
-      await validadeUniqueUsername(userInputValues.username);
+      await validateUniqueUsername(userInputValues.username);
     }
   }
 
   if ("email" in userInputValues) {
-    await validadeUniqueEmail(userInputValues.email);
+    await validateUniqueEmail(userInputValues.email);
   }
 
   if ("password" in userInputValues) {
@@ -175,7 +175,7 @@ async function update(username, userInputValues) {
   }
 }
 
-async function validadeUniqueUsername(username) {
+async function validateUniqueUsername(username) {
   const results = await database.query({
     text: `
       SELECT 
@@ -195,7 +195,7 @@ async function validadeUniqueUsername(username) {
   }
 }
 
-async function validadeUniqueEmail(email) {
+async function validateUniqueEmail(email) {
   const results = await database.query({
     text: `
       SELECT 
