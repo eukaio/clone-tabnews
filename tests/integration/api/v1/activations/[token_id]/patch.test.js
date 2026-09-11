@@ -26,9 +26,8 @@ describe("PATCH /api/v1/activations/[token_id]", () => {
 
       expect(responseBody).toEqual({
         name: "NotFoundError",
-        message:
-          "O token de ativação utilizado não foi encontrado no sistema ou expirou.",
-        action: "Faça um novo cadastro.",
+        action: "Certifique-se de que o link utilizado está correto.",
+        message: "O token de ativação utilizado não foi encontrado no sistema.",
         status_code: 404,
       });
     });
@@ -56,8 +55,7 @@ describe("PATCH /api/v1/activations/[token_id]", () => {
 
       expect(responseBody).toEqual({
         name: "NotFoundError",
-        message:
-          "O token de ativação utilizado não foi encontrado no sistema ou expirou.",
+        message: "O token de ativação utilizado expirou.",
         action: "Faça um novo cadastro.",
         status_code: 404,
       });
@@ -75,6 +73,7 @@ describe("PATCH /api/v1/activations/[token_id]", () => {
       );
 
       expect(response1.status).toBe(200);
+      const responseBody1 = await response1.json();
 
       const response2 = await fetch(
         `${webserver.origin}/api/v1/activations/${activationToken.id}`,
@@ -83,17 +82,10 @@ describe("PATCH /api/v1/activations/[token_id]", () => {
         },
       );
 
-      expect(response2.status).toBe(404);
-
+      expect(response2.status).toBe(200);
       const responseBody2 = await response2.json();
 
-      expect(responseBody2).toEqual({
-        name: "NotFoundError",
-        message:
-          "O token de ativação utilizado não foi encontrado no sistema ou expirou.",
-        action: "Faça um novo cadastro.",
-        status_code: 404,
-      });
+      expect(responseBody2).toEqual(responseBody1);
     });
 
     test("With valid token", async () => {
@@ -157,16 +149,38 @@ describe("PATCH /api/v1/activations/[token_id]", () => {
         },
       );
 
-      expect(response.status).toBe(403);
+      expect(response.status).toBe(200);
 
       const responseBody = await response.json();
 
-      expect(responseBody).toEqual({
-        name: "ForbiddenError",
-        message: "Você não pode mais utilizar tokens de ativação.",
-        action: "Entre em contato com o suporte.",
-        status_code: 403,
-      });
+      expect(responseBody.id).toEqual(activationToken.id);
+      expect(Date.parse(responseBody.used_at)).not.toBeNaN();
+    });
+
+    test("With concurrent requests using the same token", async () => {
+      const createdUser = await orchestrator.createUser();
+      const activationToken = await activation.create(createdUser.id);
+
+      const [response1, response2] = await Promise.all([
+        fetch(`${webserver.origin}/api/v1/activations/${activationToken.id}`, {
+          method: "PATCH",
+        }),
+        fetch(`${webserver.origin}/api/v1/activations/${activationToken.id}`, {
+          method: "PATCH",
+        }),
+      ]);
+
+      expect(response1.status).toBe(200);
+      expect(response2.status).toBe(200);
+
+      const responseBody1 = await response1.json();
+      const responseBody2 = await response2.json();
+
+      expect(responseBody2).toEqual(responseBody1);
+      expect(responseBody1).toBeDefined();
+
+      const activatedUser = await user.findOneById(createdUser.id);
+      expect(activatedUser.features).toContain("create:session");
     });
   });
 
